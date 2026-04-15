@@ -367,8 +367,22 @@ success "イメージプッシュ完了"
 
 echo ""
 
+# ─── ロール伝播待機 ──────────────────────────────────────────
+# フェーズ1で割り当てた UAMI の AcrPull ロールが Azure 全体に
+# 伝播するまで待機する（通常 2〜5 分）
+ROLE_WAIT=90
+info "UAMI ロール割り当ての伝播を待機中（${ROLE_WAIT}秒）..."
+for i in $(seq "${ROLE_WAIT}" -1 1); do
+  printf "\r  残り %3d 秒..." "$i"
+  sleep 1
+done
+printf "\r  待機完了。                          \n"
+success "ロール伝播待機が完了しました。"
+
+echo ""
+
 # ═══════════════════════════════════════════════════════════════
-# フェーズ2: Container App + ロール割り当て（app.bicep）
+# フェーズ2: Container App デプロイ（app.bicep）
 # ═══════════════════════════════════════════════════════════════
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║           フェーズ2: Container App デプロイ              ║"
@@ -381,13 +395,41 @@ APP_BICEP="${SCRIPT_DIR}/app.bicep"
 info "Bicep デプロイを開始します（デプロイ名: ${PHASE2_DEPLOYMENT_NAME}）..."
 echo ""
 
-az deployment group create \
+if ! az deployment group create \
   --subscription "${SUBSCRIPTION_ID}" \
   --resource-group "${RESOURCE_GROUP}" \
   --name "${PHASE2_DEPLOYMENT_NAME}" \
   --template-file "${APP_BICEP}" \
   --parameters env="${ENV}" location="${LOCATION}" \
-  --output none
+  --output none; then
+
+  error "フェーズ2 デプロイが失敗しました。Container App のログを確認します..."
+  echo ""
+  CA_NAME_FAILED=$(az containerapp list \
+    --subscription "${SUBSCRIPTION_ID}" \
+    --resource-group "${RESOURCE_GROUP}" \
+    --query "[?starts_with(name, 'ca-cline-api-')].name" \
+    --output tsv 2>/dev/null | head -1 || true)
+
+  if [[ -n "${CA_NAME_FAILED}" ]]; then
+    info "Container App「${CA_NAME_FAILED}」のシステムログ（直近20件）:"
+    az containerapp logs show \
+      --subscription "${SUBSCRIPTION_ID}" \
+      --resource-group "${RESOURCE_GROUP}" \
+      --name "${CA_NAME_FAILED}" \
+      --type system \
+      --tail 20 2>/dev/null || warn "ログを取得できませんでした。"
+    echo ""
+    info "リビジョン一覧:"
+    az containerapp revision list \
+      --subscription "${SUBSCRIPTION_ID}" \
+      --resource-group "${RESOURCE_GROUP}" \
+      --name "${CA_NAME_FAILED}" \
+      --query "[].{Name:name, Active:properties.active, State:properties.runningState, Replicas:properties.replicas}" \
+      --output table 2>/dev/null || true
+  fi
+  exit 1
+fi
 
 success "フェーズ2 デプロイが完了しました。"
 echo ""
