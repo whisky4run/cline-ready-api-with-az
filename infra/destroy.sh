@@ -108,7 +108,49 @@ TAGGED_RESOURCES=$(az resource list \
   --output table 2>/dev/null)
 
 if [[ -z "${TAGGED_RESOURCES}" ]] || [[ "${TAGGED_RESOURCES}" == *"(empty)"* ]]; then
-  warn "削除対象のタグ付きリソースが見つかりませんでした。"
+  warn "タグ付きリソースが見つかりませんでした（タグ追加前のデプロイの可能性）。"
+  echo ""
+  info "リソースグループ内の全リソース:"
+  az resource list \
+    --subscription "${SUBSCRIPTION_ID}" \
+    --resource-group "${RESOURCE_GROUP}" \
+    --query "[].{Name:name, Type:type}" \
+    --output table 2>/dev/null
+  echo ""
+  warn "代替手段: リソースグループ「${RESOURCE_GROUP}」ごと削除しますか？"
+  warn "※ AI Foundry など手動作成リソースも削除されます。"
+  echo ""
+  read -r -p "リソースグループごと削除する場合は「${RESOURCE_GROUP}」と入力してください（スキップは Enter）: " RG_DELETE_CONFIRM
+  if [[ "${RG_DELETE_CONFIRM}" == "${RESOURCE_GROUP}" ]]; then
+    # Key Vault 名を事前取得（パージ用）
+    KV_NAMES=$(az keyvault list \
+      --subscription "${SUBSCRIPTION_ID}" \
+      --resource-group "${RESOURCE_GROUP}" \
+      --query "[].name" \
+      --output tsv 2>/dev/null || true)
+    KV_LOCATION=$(az group show \
+      --subscription "${SUBSCRIPTION_ID}" \
+      --name "${RESOURCE_GROUP}" \
+      --query location --output tsv 2>/dev/null || echo "japaneast")
+
+    info "リソースグループ「${RESOURCE_GROUP}」を削除しています..."
+    az group delete \
+      --subscription "${SUBSCRIPTION_ID}" \
+      --name "${RESOURCE_GROUP}" \
+      --yes \
+      --no-wait
+    success "削除リクエストを送信しました。バックグラウンドで削除が進行中です。"
+
+    if [[ -n "${KV_NAMES}" ]]; then
+      echo ""
+      info "Key Vault パージ用コマンド（7日間のソフト削除期間を即時解除）:"
+      for KV_NAME in ${KV_NAMES}; do
+        echo "  az keyvault purge --subscription ${SUBSCRIPTION_ID} --name ${KV_NAME} --location ${KV_LOCATION}"
+      done
+    fi
+  else
+    info "削除をスキップしました。"
+  fi
   exit 0
 fi
 

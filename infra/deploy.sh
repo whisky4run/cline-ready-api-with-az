@@ -354,8 +354,9 @@ success "ACR ログイン完了"
 
 IMAGE_TAG="${ACR_LOGIN_SERVER}/cline-api:latest"
 
-info "Docker イメージをビルド中: ${IMAGE_TAG}"
+info "Docker イメージをビルド中: ${IMAGE_TAG} (linux/amd64)"
 docker build \
+  --platform linux/amd64 \
   -t "${IMAGE_TAG}" \
   -f "${REPO_ROOT}/src/ClineApiWithAz/Dockerfile" \
   "${REPO_ROOT}"
