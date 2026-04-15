@@ -161,6 +161,7 @@ RESOURCE_TYPES_IN_ORDER=(
   "Microsoft.DocumentDB/databaseAccounts"
   "Microsoft.Insights/components"
   "Microsoft.OperationalInsights/workspaces"
+  "Microsoft.ManagedIdentity/userAssignedIdentities"
 )
 
 delete_by_type() {

@@ -9,18 +9,24 @@ param caEnvironmentId string
 param acrLoginServer string
 param keyVaultUri string
 param appInsightsConnectionString string
+param uamiId string
 param tags object = {}
 
 var caName = 'ca-cline-api-${nameSuffix}'
 var containerImage = '${acrLoginServer}/cline-api:latest'
 
-// Container App 本体（システム割り当てマネージド ID を使用）
+// Container App 本体（ユーザー割り当てマネージド ID を使用）
+// フェーズ1でロール割り当て済みの UAMI を使うことで、
+// イメージ pull 時に AcrPull 権限が確実に伝播している
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: caName
   location: location
   tags: tags
   identity: {
-    type: 'SystemAssigned'
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${uamiId}': {}
+    }
   }
   properties: {
     environmentId: caEnvironmentId
@@ -34,7 +40,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
       registries: [
         {
           server: acrLoginServer
-          identity: 'system'
+          identity: uamiId
         }
       ]
       secrets: []
@@ -87,7 +93,6 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-output containerAppId          string = containerApp.id
-output containerAppName        string = containerApp.name
-output containerAppFqdn        string = containerApp.properties.configuration.ingress.fqdn
-output containerAppPrincipalId string = containerApp.identity.principalId
+output containerAppId   string = containerApp.id
+output containerAppName string = containerApp.name
+output containerAppFqdn string = containerApp.properties.configuration.ingress.fqdn

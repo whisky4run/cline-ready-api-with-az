@@ -40,8 +40,9 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
   name: 'appi-cline-api-${nameSuffix}'
 }
 
-resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' existing = {
-  name: 'cosmos-cline-api-${nameSuffix}'
+// フェーズ1で作成済みの UAMI を参照
+resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
+  name: 'id-cline-api-${nameSuffix}'
 }
 
 // ─── モジュール呼び出し ───────────────────────────────────────
@@ -56,18 +57,8 @@ module containerApp 'modules/containerApp.bicep' = {
     acrLoginServer: acr.properties.loginServer
     keyVaultUri: keyVault.properties.vaultUri
     appInsightsConnectionString: appInsights.properties.ConnectionString
+    uamiId: uami.id
     tags: tags
-  }
-}
-
-// ロール割り当ては Container App の ID が確定してから実行
-module roleAssignments 'modules/roleAssignments.bicep' = {
-  name: 'roleAssignments'
-  params: {
-    containerAppPrincipalId: containerApp.outputs.containerAppPrincipalId
-    keyVaultName: keyVault.name
-    acrName: acr.name
-    cosmosAccountName: cosmosAccount.name
   }
 }
 
@@ -78,6 +69,3 @@ output apiEndpoint string = 'https://${containerApp.outputs.containerAppFqdn}'
 
 @description('Container App 名')
 output containerAppName string = containerApp.outputs.containerAppName
-
-@description('Container App のマネージド ID プリンシパル ID')
-output containerAppPrincipalId string = containerApp.outputs.containerAppPrincipalId

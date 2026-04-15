@@ -10,8 +10,7 @@ RUN dotnet restore src/ClineApiWithAz/ClineApiWithAz.csproj
 COPY src/ClineApiWithAz/ src/ClineApiWithAz/
 RUN dotnet publish src/ClineApiWithAz/ClineApiWithAz.csproj \
     -c Release \
-    -o /app/publish \
-    --no-restore
+    -o /app/publish
 
 # ─── ランタイムステージ ───────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime

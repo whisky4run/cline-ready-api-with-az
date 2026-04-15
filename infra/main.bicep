@@ -76,6 +76,27 @@ module containerAppsEnv 'modules/containerApps.bicep' = {
   }
 }
 
+// UAMI を作成（フェーズ2 の Container App がこの ID を使う）
+module managedIdentity 'modules/managedIdentity.bicep' = {
+  name: 'managedIdentity'
+  params: {
+    location: location
+    nameSuffix: nameSuffix
+    tags: tags
+  }
+}
+
+// UAMI へのロール割り当て（フェーズ1で完了させ、フェーズ2 開始前に伝播させる）
+module roleAssignments 'modules/roleAssignments.bicep' = {
+  name: 'roleAssignments'
+  params: {
+    containerAppPrincipalId: managedIdentity.outputs.uamiPrincipalId
+    keyVaultName: keyVault.outputs.keyVaultName
+    acrName: acr.outputs.acrName
+    cosmosAccountName: cosmos.outputs.cosmosAccountName
+  }
+}
+
 // ─── デプロイ後の案内用アウトプット ──────────────────────────
 
 @description('Key Vault の URI')
@@ -95,6 +116,9 @@ output cosmosAccountName string = cosmos.outputs.cosmosAccountName
 
 @description('Container Apps 環境 ID（フェーズ2で使用）')
 output caEnvironmentId string = containerAppsEnv.outputs.caEnvironmentId
+
+@description('UAMI のリソース ID（フェーズ2で使用）')
+output uamiId string = managedIdentity.outputs.uamiId
 
 @description('手動登録が必要な Key Vault シークレット名一覧')
 output requiredSecrets array = keyVault.outputs.secretNames
