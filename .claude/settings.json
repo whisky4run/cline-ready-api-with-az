@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet build:*)",
+      "Read(//Users/stohru/.nuget/packages/azure.ai.inference/1.0.0-beta.5/lib/net8.0/**)",
+      "Read(//Users/stohru/.nuget/packages/azure.ai.inference/1.0.0-beta.5/**)",
+      "Bash(dotnet test:*)",
+      "Bash(chmod +x /Users/stohru/DEV/GitHub/cline-ready-api-with-az/infra/deploy.sh /Users/stohru/DEV/GitHub/cline-ready-api-with-az/infra/destroy.sh)",
+      "Bash(docker build:*)",
+      "Bash(chmod +x /Users/stohru/DEV/GitHub/cline-ready-api-with-az/infra/deploy.sh)",
+      "Bash(az bicep *)"
+    ],
+    "additionalDirectories": [
+      "/Users/stohru/DEV/GitHub/cline-ready-api-with-az"
+    ]
+  }
+}

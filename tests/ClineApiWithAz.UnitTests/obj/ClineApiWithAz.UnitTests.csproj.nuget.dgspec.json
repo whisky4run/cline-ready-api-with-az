@@ -1,0 +1,187 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/tests/ClineApiWithAz.UnitTests/ClineApiWithAz.UnitTests.csproj": {}
+  },
+  "projects": {
+    "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/ClineApiWithAz.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/ClineApiWithAz.csproj",
+        "projectName": "ClineApiWithAz",
+        "projectPath": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/ClineApiWithAz.csproj",
+        "packagesPath": "/Users/stohru/.nuget/packages/",
+        "outputPath": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/stohru/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Azure.AI.Inference": {
+              "target": "Package",
+              "version": "[1.0.0-beta.5, )"
+            },
+            "Azure.Extensions.AspNetCore.Configuration.Secrets": {
+              "target": "Package",
+              "version": "[1.5.0, )"
+            },
+            "Azure.Identity": {
+              "target": "Package",
+              "version": "[1.21.0, )"
+            },
+            "Microsoft.ApplicationInsights.AspNetCore": {
+              "target": "Package",
+              "version": "[3.1.0, )"
+            },
+            "Microsoft.Azure.Cosmos": {
+              "target": "Package",
+              "version": "[3.58.0, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.4, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.200/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/tests/ClineApiWithAz.UnitTests/ClineApiWithAz.UnitTests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/tests/ClineApiWithAz.UnitTests/ClineApiWithAz.UnitTests.csproj",
+        "projectName": "ClineApiWithAz.UnitTests",
+        "projectPath": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/tests/ClineApiWithAz.UnitTests/ClineApiWithAz.UnitTests.csproj",
+        "packagesPath": "/Users/stohru/.nuget/packages/",
+        "outputPath": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/tests/ClineApiWithAz.UnitTests/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/stohru/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/ClineApiWithAz.csproj": {
+                "projectPath": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/ClineApiWithAz.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.TestHost": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Azure.Cosmos": {
+              "target": "Package",
+              "version": "[3.58.0, )"
+            },
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.8.0, )"
+            },
+            "Moq": {
+              "target": "Package",
+              "version": "[4.20.72, )"
+            },
+            "coverlet.collector": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.5.3, )"
+            },
+            "xunit.runner.visualstudio": {
+              "target": "Package",
+              "version": "[2.5.3, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.200/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
