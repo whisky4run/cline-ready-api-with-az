@@ -1,9 +1,10 @@
-# CLAUDE.md — cline-api-with-az
+# CLAUDE.md — cline-api-with-az (one-api)
 
 ## プロジェクト概要
 
-VS Code + Cline から OpenAI 互換 API 経由で呼び出せる、Azure AI Foundry（GPT-5系）へのプロキシ API システム。
-メンバーごとの API キー認証と使用量管理を備え、Azure 上で動作する。
+VS Code + Cline から OpenAI 互換 API 経由で呼び出せる、Azure AI Foundry（gpt-4.1-mini）へのシンプルなプロキシ API システム。
+単一の API キーで認証する構成で、メンバーごとの管理・使用量追跡は行わない。
+Azure Container Apps 上で動作し、シークレットは Container Apps のネイティブ secrets で管理する。
 
 ---
 
@@ -11,11 +12,12 @@ VS Code + Cline から OpenAI 互換 API 経由で呼び出せる、Azure AI Fou
 
 | カテゴリ | 技術 |
 |---|---|
-| 言語 | C# (.NET 9以降) |
+| 言語 | C# (.NET 8) |
 | フレームワーク | ASP.NET Core Web API |
-| AI バックエンド | Azure AI Foundry（GPT-5系モデル） |
-| インフラ | Azure（構成はフェーズ2で決定） |
-| IaC | Bicep |
+| AI バックエンド | Azure AI Foundry（gpt-4.1-mini） |
+| ホスティング | Azure Container Apps |
+| 監視 | Azure Application Insights |
+| IaC | Bicep（ARM JSON にビルドしてデプロイ） |
 | リポジトリ | GitHub |
 | テスト | xUnit（ユニットテスト・統合テスト） |
 
@@ -30,53 +32,52 @@ cline-api-with-az/
 │
 ├── src/
 │   └── ClineApiWithAz/        # ASP.NET Core Web API プロジェクト
-│       ├── Controllers/       # APIエンドポイント
-│       ├── Services/          # ビジネスロジック（AI呼び出し、使用量管理など）
-│       ├── Models/            # リクエスト・レスポンス型、ドメインモデル
-│       ├── Middleware/        # APIキー認証など
+│       ├── Controllers/       # ChatCompletionsController, ModelsController
+│       ├── Services/          # AzureAIService（AI Foundry へのプロキシ）
+│       ├── Models/            # リクエスト・レスポンス型
+│       ├── Middleware/        # APIキー認証（単一キーとの値比較）
 │       ├── Program.cs
 │       └── appsettings.json
 │
 ├── tests/
-│   ├── ClineApiWithAz.UnitTests/       # ユニットテスト
-│   └── ClineApiWithAz.IntegrationTests/ # 統合テスト
+│   ├── ClineApiWithAz.UnitTests/         # ユニットテスト
+│   └── ClineApiWithAz.IntegrationTests/  # 統合テスト
 │
 ├── infra/
-│   ├── main.bicep             # エントリーポイント
+│   ├── main.bicep             # インフラのエントリーポイント
+│   ├── app.bicep              # Container App 本体のデプロイ
+│   ├── build.sh               # Bicep → ARM JSON ビルドスクリプト
+│   ├── deploy.sh              # デプロイスクリプト
+│   ├── destroy.sh             # リソース削除スクリプト
+│   ├── arm/                   # ビルド済み ARM JSON（main.json, app.json）
 │   ├── modules/               # Bicep モジュール群
+│   │   ├── aiFoundry.bicep
+│   │   ├── containerApp.bicep
+│   │   ├── containerApps.bicep
+│   │   ├── containerRegistry.bicep
+│   │   ├── managedIdentity.bicep
+│   │   ├── monitoring.bicep
+│   │   └── roleAssignments.bicep
 │   └── parameters/            # 環境別パラメータファイル
 │
 └── docs/
     ├── architecture.md        # アーキテクチャ設計
     ├── api-spec.md            # API仕様
     ├── infra-design.md        # インフラ設計
-    └── usage-tracking.md      # 使用量管理の設計
+    ├── auth.md                # 認証設計
+    └── deployment-guide.md    # デプロイ手順
 ```
 
 ---
 
-## 開発フェーズ
+## 実装状況
 
-### フェーズ 1：設計ドキュメント作成
-- `docs/architecture.md` — システム全体のアーキテクチャ設計を記述
-- `docs/api-spec.md` — OpenAI 互換 API の仕様を定義
-- `docs/infra-design.md` — Azure リソース構成の設計を記述
-- `docs/usage-tracking.md` — メンバーごとの使用量管理の設計を記述
+すべてのフェーズが完了済み。
 
-### フェーズ 2：API サーバー実装（C#）
-- ASP.NET Core プロジェクトのセットアップ
-- OpenAI 互換エンドポイントの実装（`/v1/chat/completions` など）
-- Azure AI Foundry への接続・モデル切り替え対応
-- APIキー認証ミドルウェアの実装
-- メンバーごとの使用量記録・参照機能の実装
-
-### フェーズ 3：テスト実装
-- ユニットテスト（Services、Middleware）
-- 統合テスト（エンドポイント全体の動作確認）
-
-### フェーズ 4：IaC（Bicep）
-- Azure リソースの Bicep 定義
-- 環境別パラメータ（dev / prod）
+- フェーズ 1（設計ドキュメント）: 完了
+- フェーズ 2（API サーバー実装）: 完了
+- フェーズ 3（テスト実装）: 完了
+- フェーズ 4（IaC / Bicep）: 完了
 
 ---
 
@@ -84,22 +85,27 @@ cline-api-with-az/
 
 ### OpenAI 互換 API
 - Cline が標準で対応している OpenAI API 仕様に準拠する
-- 最低限 `/v1/chat/completions`（ストリーミング対応含む）を実装する
-- モデル名はリクエストの `model` フィールドで切り替え可能にする
+- `/v1/chat/completions`（ストリーミング対応含む）と `/v1/models` を実装
+- モデル名はリクエストの `model` フィールドで切り替え可能にする（`appsettings.json` の `AzureAI:Models` でマッピング）
 
-### 認証（APIキー方式）
+### 認証（単一 API キー方式）
 - クライアント（Cline）は `Authorization: Bearer <api-key>` ヘッダーで認証する
-- APIキーはメンバーごとに発行・管理する
-- APIキーと利用者の紐付けはサーバー側で管理する
+- サーバーは `ApiKey:Value`（環境変数 `ApiKey__Value`）と直接比較するだけでよい
+- メンバーごとのキー発行・紐付けは行わない
+- データベースアクセスなし
 
-### 使用量管理
-- リクエスト・レスポンスのトークン数をメンバーごとに記録する
-- 使用量の参照 API を用意する（管理者向け）
-- ストレージは Azure のマネージドサービスを利用（詳細はフェーズ1で設計）
+### シークレット管理
+- `ApiKey__Value`（プロキシ APIキー）と `AzureAI__ApiKey`（AI Foundry APIキー）は Container Apps のネイティブ secrets で管理
+- Key Vault は使用しない
+- ARM テンプレートの `secureString` パラメータでデプロイ時に渡す
 
-### モデル切り替え
-- リクエストの `model` フィールドに応じて AI Foundry のモデルを切り替える
-- 利用可能なモデルは設定ファイルで管理する
+### 監視
+- Azure Application Insights でリクエストログ・エラー・レイテンシを収集
+
+### インフラ（Bicep）
+- `main.bicep`：AI Foundry、Container Apps 環境、ACR、Managed Identity、監視リソースを構築
+- `app.bicep`：Container App 本体（イメージ指定・secrets 設定）を別途デプロイ
+- Bicep を変更した場合は `build.sh` を再実行して `arm/` の ARM JSON を更新すること
 
 ### エラーハンドリング
 - OpenAI API のエラーレスポンス形式に準拠する
@@ -112,23 +118,22 @@ cline-api-with-az/
 - C# の命名規則は Microsoft の標準に従う（PascalCase、camelCase）
 - 非同期処理は `async/await` を使用する
 - DIコンテナ（`IServiceCollection`）でサービスを管理する
-- 設定値は `appsettings.json` + 環境変数で管理し、シークレットはAzure Key Vaultを使用する
+- 設定値は `appsettings.json` + 環境変数で管理する
 - コメントは日本語でOK
 
 ---
 
 ## ドキュメント規約
 
-- `docs/` 配下の設計ドキュメントは実装前に作成し、実装と同期を保つ
-- Bicep を書く前に `docs/infra-design.md` に設計を記述してから実装する
+- `docs/` 配下の設計ドキュメントは実装と同期を保つ
+- インフラ構成を変更する際は `docs/infra-design.md` を先に更新する
 - 設計変更があった場合はドキュメントも同時に更新する
 
 ---
 
 ## 作業時の注意事項
 
-- 各フェーズは順番に進める。前のフェーズが完了してから次に進む
 - コードを書く前に、実装内容をユーザーに説明して確認を取る
-- Bicep のリソース構成を変更する際は `docs/infra-design.md` を先に更新する
+- Bicep を変更したら必ず `build.sh` で ARM JSON を再生成する
 - シークレット（接続文字列、APIキーなど）はコードにハードコードしない
-- `tests/` のテストは実装コードと同じフェーズで作成する（後回しにしない）
+- テストは実装コードと合わせて更新する
