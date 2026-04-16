@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace ClineApiWithAz.Models.Requests;
@@ -34,6 +35,24 @@ public class ChatMessage
     [JsonPropertyName("role")]
     public string Role { get; set; } = string.Empty;
 
+    /// <summary>
+    /// content は文字列または配列（マルチモーダル形式）の両方を受け付ける。
+    /// Cline は [{"type":"text","text":"..."}] 形式で送信することがある。
+    /// </summary>
     [JsonPropertyName("content")]
-    public string Content { get; set; } = string.Empty;
+    public JsonElement Content { get; set; }
+
+    /// <summary>content からテキストを取り出す。配列形式の場合は type=text の要素を結合する。</summary>
+    public string GetTextContent()
+    {
+        return Content.ValueKind switch
+        {
+            JsonValueKind.String => Content.GetString() ?? string.Empty,
+            JsonValueKind.Array => string.Concat(
+                Content.EnumerateArray()
+                    .Where(e => e.TryGetProperty("type", out var t) && t.GetString() == "text")
+                    .Select(e => e.TryGetProperty("text", out var txt) ? txt.GetString() ?? string.Empty : string.Empty)),
+            _ => string.Empty
+        };
+    }
 }

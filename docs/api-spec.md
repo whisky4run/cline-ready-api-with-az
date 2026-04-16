@@ -164,7 +164,7 @@ OpenAI API のエラー形式に準拠する。
 {
   "AzureAI": {
     "Models": {
-      "gpt-4.1-mini": "azureml://registries/azure-openai/models/gpt-4.1-mini/versions/2025-04-14"
+      "gpt-4.1-mini": "gpt-4.1-mini"
     }
   }
 }

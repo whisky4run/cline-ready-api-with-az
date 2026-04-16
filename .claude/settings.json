@@ -13,7 +13,9 @@
       "Bash(chmod +x /Users/stohru/DEV/GitHub/cline-ready-api-with-az/infra/deploy.sh)",
       "Bash(az bicep *)",
       "Bash(chmod +x infra/build.sh infra/deploy.sh infra/destroy.sh)",
-      "Bash(bash infra/build.sh)"
+      "Bash(bash infra/build.sh)",
+      "Bash(bash /Users/stohru/DEV/GitHub/cline-ready-api-with-az/infra/build.sh)",
+      "Bash(dotnet restore *)"
     ],
     "additionalDirectories": [
       "/Users/stohru/DEV/GitHub/cline-ready-api-with-az",

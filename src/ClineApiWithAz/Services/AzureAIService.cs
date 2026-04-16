@@ -1,8 +1,10 @@
+using System.ClientModel;
 using System.Runtime.CompilerServices;
 using Azure;
-using Azure.AI.Inference;
+using Azure.AI.OpenAI;
 using ClineApiWithAz.Models.Requests;
 using ClineApiWithAz.Models.Responses;
+using OpenAI.Chat;
 
 namespace ClineApiWithAz.Services;
 
@@ -14,27 +16,28 @@ public class AzureAIService(IConfiguration configuration, ILogger<AzureAIService
     private readonly string _apiKey = configuration["AzureAI:ApiKey"]
         ?? throw new InvalidOperationException("AzureAI:ApiKey が設定されていません");
 
-    // モデル名 → デプロイ URI のマッピング
+    // モデル名 → デプロイ名のマッピング（設定がなければモデル名をそのまま使用）
     private Dictionary<string, string> ModelMappings =>
         configuration.GetSection("AzureAI:Models").Get<Dictionary<string, string>>() ?? [];
 
     public async Task<ChatCompletionResponse> CompleteChatAsync(
         ChatCompletionRequest request, CancellationToken cancellationToken = default)
     {
-        var client = CreateClient();
-        var options = BuildChatCompletionsOptions(request);
+        var (chatClient, deploymentName) = CreateChatClient(request.Model);
 
-        logger.LogInformation("Azure AI Foundry へリクエスト送信: model={Model}", request.Model);
+        logger.LogInformation("Azure AI Foundry へリクエスト送信: deployment={Deployment}", deploymentName);
 
-        var response = await client.CompleteAsync(options, cancellationToken);
-        // Azure.AI.Inference beta.5: ChatCompletions は Choices を持たず、Content が直接格納される
-        var completion = response.Value;
+        var messages = BuildChatMessages(request);
+        var options = BuildChatCompletionOptions(request);
+
+        var result = await chatClient.CompleteChatAsync(messages, options, cancellationToken);
+        var completion = result.Value;
 
         return new ChatCompletionResponse
         {
             Id = completion.Id,
             Model = request.Model,
-            Created = completion.Created.ToUnixTimeSeconds(),
+            Created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             Choices =
             [
                 new ChatCompletionChoice
@@ -43,17 +46,17 @@ public class AzureAIService(IConfiguration configuration, ILogger<AzureAIService
                     Message = new ChatCompletionMessage
                     {
                         Role = "assistant",
-                        Content = completion.Content
+                        Content = string.Concat(completion.Content.Select(p => p.Text))
                     },
-                    FinishReason = completion.FinishReason?.ToString()?.ToLower()
+                    FinishReason = completion.FinishReason.ToString()?.ToLower()
                 }
             ],
-            Usage = completion.Usage is not null ? new UsageInfo
+            Usage = new UsageInfo
             {
-                PromptTokens = completion.Usage.PromptTokens,
-                CompletionTokens = completion.Usage.CompletionTokens,
-                TotalTokens = completion.Usage.TotalTokens
-            } : null
+                PromptTokens = completion.Usage.InputTokenCount,
+                CompletionTokens = completion.Usage.OutputTokenCount,
+                TotalTokens = completion.Usage.TotalTokenCount
+            }
         };
     }
 
@@ -61,20 +64,23 @@ public class AzureAIService(IConfiguration configuration, ILogger<AzureAIService
         ChatCompletionRequest request,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var client = CreateClient();
-        var options = BuildChatCompletionsOptions(request);
+        var (chatClient, deploymentName) = CreateChatClient(request.Model);
 
-        logger.LogInformation("Azure AI Foundry へストリーミングリクエスト送信: model={Model}", request.Model);
+        logger.LogInformation("Azure AI Foundry へストリーミングリクエスト送信: deployment={Deployment}", deploymentName);
 
-        var streamingResponse = await client.CompleteStreamingAsync(options, cancellationToken);
+        var messages = BuildChatMessages(request);
+        var options = BuildChatCompletionOptions(request);
+
+        var streamingResult = chatClient.CompleteChatStreamingAsync(messages, options, cancellationToken);
 
         var completionId = $"chatcmpl-{Guid.NewGuid():N}";
         var created = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         bool isFirst = true;
 
-        // StreamingChatCompletionsUpdate は ContentUpdate, FinishReason, Usage を直接持つ
-        await foreach (var update in streamingResponse.WithCancellation(cancellationToken))
+        await foreach (var update in streamingResult.WithCancellation(cancellationToken))
         {
+            var contentText = string.Concat(update.ContentUpdate.Select(p => p.Text));
+
             var chunk = new ChatCompletionChunk
             {
                 Id = completionId,
@@ -88,17 +94,16 @@ public class AzureAIService(IConfiguration configuration, ILogger<AzureAIService
                         Delta = new ChatCompletionDelta
                         {
                             Role = isFirst ? "assistant" : null,
-                            Content = update.ContentUpdate
+                            Content = contentText
                         },
                         FinishReason = update.FinishReason?.ToString()?.ToLower()
                     }
                 ],
-                // 最終チャンクにのみ usage が含まれる
                 Usage = update.Usage is not null ? new UsageInfo
                 {
-                    PromptTokens = update.Usage.PromptTokens,
-                    CompletionTokens = update.Usage.CompletionTokens,
-                    TotalTokens = update.Usage.TotalTokens
+                    PromptTokens = update.Usage.InputTokenCount,
+                    CompletionTokens = update.Usage.OutputTokenCount,
+                    TotalTokens = update.Usage.TotalTokenCount
                 } : null
             };
 
@@ -107,40 +112,45 @@ public class AzureAIService(IConfiguration configuration, ILogger<AzureAIService
         }
     }
 
-    private ChatCompletionsClient CreateClient()
+    private (ChatClient chatClient, string deploymentName) CreateChatClient(string modelName)
     {
-        return new ChatCompletionsClient(
+        var deploymentName = ModelMappings.TryGetValue(modelName, out var mapped)
+            ? mapped
+            : modelName;
+
+        logger.LogDebug("AI Foundry エンドポイント: {Endpoint}, デプロイ名: {Deployment}", _endpoint, deploymentName);
+
+        var azureClient = new AzureOpenAIClient(
             new Uri(_endpoint),
             new AzureKeyCredential(_apiKey));
+
+        return (azureClient.GetChatClient(deploymentName), deploymentName);
     }
 
-    private ChatCompletionsOptions BuildChatCompletionsOptions(ChatCompletionRequest request)
+    private static List<OpenAI.Chat.ChatMessage> BuildChatMessages(ChatCompletionRequest request)
     {
-        // モデル名を AI Foundry のデプロイ URI にマッピング
-        if (!ModelMappings.TryGetValue(request.Model, out var deploymentUri))
-        {
-            throw new ArgumentException($"モデル '{request.Model}' は設定に存在しません");
-        }
-
-        var options = new ChatCompletionsOptions
-        {
-            Model = deploymentUri
-        };
-
+        var messages = new List<OpenAI.Chat.ChatMessage>();
         foreach (var msg in request.Messages)
         {
-            ChatRequestMessage chatMsg = msg.Role switch
+            var text = msg.GetTextContent();
+            OpenAI.Chat.ChatMessage chatMsg = msg.Role switch
             {
-                "system" => new ChatRequestSystemMessage(msg.Content),
-                "assistant" => new ChatRequestAssistantMessage(msg.Content),
-                _ => new ChatRequestUserMessage(msg.Content)
+                "system" => new SystemChatMessage(text),
+                "assistant" => new AssistantChatMessage(text),
+                _ => new UserChatMessage(text)
             };
-            options.Messages.Add(chatMsg);
+            messages.Add(chatMsg);
         }
+        return messages;
+    }
+
+    private static ChatCompletionOptions BuildChatCompletionOptions(ChatCompletionRequest request)
+    {
+        var options = new ChatCompletionOptions();
 
         if (request.Temperature.HasValue) options.Temperature = request.Temperature;
-        if (request.MaxTokens.HasValue) options.MaxTokens = request.MaxTokens;
-        if (request.TopP.HasValue) options.NucleusSamplingFactor = request.TopP;
+        if (request.MaxTokens.HasValue) options.MaxOutputTokenCount = request.MaxTokens;
+        if (request.TopP.HasValue) options.TopP = request.TopP;
         if (request.FrequencyPenalty.HasValue) options.FrequencyPenalty = request.FrequencyPenalty;
         if (request.PresencePenalty.HasValue) options.PresencePenalty = request.PresencePenalty;
 

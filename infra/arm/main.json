@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "5617511819616013895"
+      "templateHash": "15904794312491856510"
     }
   },
   "parameters": {
@@ -25,6 +25,18 @@
       "defaultValue": "[resourceGroup().location]",
       "metadata": {
         "description": "デプロイリージョン"
+      }
+    },
+    "modelName": {
+      "type": "string",
+      "metadata": {
+        "description": "デプロイする AI モデル名（例: gpt-4.1-mini）"
+      }
+    },
+    "modelVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "モデルバージョン（例: 2025-04-14）"
       }
     }
   },
@@ -447,6 +459,130 @@
         "[resourceId('Microsoft.Resources/deployments', 'containerRegistry')]",
         "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]"
       ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "aiFoundry",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "nameSuffix": {
+            "value": "[variables('nameSuffix')]"
+          },
+          "modelName": {
+            "value": "[parameters('modelName')]"
+          },
+          "modelVersion": {
+            "value": "[parameters('modelVersion')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.42.1.51946",
+              "templateHash": "6282974015078263503"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "nameSuffix": {
+              "type": "string"
+            },
+            "modelName": {
+              "type": "string",
+              "metadata": {
+                "description": "デプロイするモデル名（例: gpt-4.1-mini）"
+              }
+            },
+            "modelVersion": {
+              "type": "string",
+              "metadata": {
+                "description": "モデルバージョン（例: 2025-04-14）"
+              }
+            },
+            "modelCapacity": {
+              "type": "int",
+              "defaultValue": 10,
+              "metadata": {
+                "description": "モデルの TPM キャパシティ（千トークン/分）"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {}
+            }
+          },
+          "variables": {
+            "accountName": "[format('ai-cline-api-{0}', parameters('nameSuffix'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.CognitiveServices/accounts",
+              "apiVersion": "2024-10-01",
+              "name": "[variables('accountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "AIServices",
+              "sku": {
+                "name": "S0"
+              },
+              "properties": {
+                "customSubDomainName": "[variables('accountName')]",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false
+              }
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts/deployments",
+              "apiVersion": "2024-10-01",
+              "name": "[format('{0}/{1}', variables('accountName'), parameters('modelName'))]",
+              "sku": {
+                "name": "GlobalStandard",
+                "capacity": "[parameters('modelCapacity')]"
+              },
+              "properties": {
+                "model": {
+                  "format": "OpenAI",
+                  "name": "[parameters('modelName')]",
+                  "version": "[parameters('modelVersion')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('accountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "endpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', variables('accountName')), '2024-10-01').endpoint]"
+            },
+            "accountName": {
+              "type": "string",
+              "value": "[variables('accountName')]"
+            },
+            "modelName": {
+              "type": "string",
+              "value": "[parameters('modelName')]"
+            }
+          }
+        }
+      }
     }
   ],
   "outputs": {
@@ -477,6 +613,27 @@
         "description": "UAMI のリソース ID（app.bicep で使用）"
       },
       "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.uamiId.value]"
+    },
+    "aiEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "AI Foundry のエンドポイント URL"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'aiFoundry'), '2025-04-01').outputs.endpoint.value]"
+    },
+    "aiAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "AI Foundry のアカウント名（deploy.sh が API キー取得に使用）"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'aiFoundry'), '2025-04-01').outputs.accountName.value]"
+    },
+    "aiModelName": {
+      "type": "string",
+      "metadata": {
+        "description": "デプロイされたモデル名"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'aiFoundry'), '2025-04-01').outputs.modelName.value]"
     }
   }
 }

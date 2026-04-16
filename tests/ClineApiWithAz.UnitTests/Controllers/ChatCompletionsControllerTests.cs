@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ClineApiWithAz.Controllers;
 using ClineApiWithAz.Models.Requests;
 using ClineApiWithAz.Models.Responses;
@@ -44,7 +45,7 @@ public class ChatCompletionsControllerTests
         var request = new ChatCompletionRequest
         {
             Model = "gpt-4.1-mini",
-            Messages = [new() { Role = "user", Content = "Hello" }],
+            Messages = [new() { Role = "user", Content = JsonSerializer.SerializeToElement("Hello") }],
             Stream = false
         };
 
@@ -65,7 +66,7 @@ public class ChatCompletionsControllerTests
         var request = new ChatCompletionRequest
         {
             Model = "",
-            Messages = [new() { Role = "user", Content = "Hello" }]
+            Messages = [new() { Role = "user", Content = JsonSerializer.SerializeToElement("Hello") }]
         };
 
         var result = await controller.ChatCompletions(request, CancellationToken.None);
@@ -103,7 +104,7 @@ public class ChatCompletionsControllerTests
         var request = new ChatCompletionRequest
         {
             Model = "unknown",
-            Messages = [new() { Role = "user", Content = "Hello" }]
+            Messages = [new() { Role = "user", Content = JsonSerializer.SerializeToElement("Hello") }]
         };
 
         var result = await controller.ChatCompletions(request, CancellationToken.None);
@@ -124,7 +125,7 @@ public class ChatCompletionsControllerTests
         var request = new ChatCompletionRequest
         {
             Model = "gpt-4.1-mini",
-            Messages = [new() { Role = "user", Content = "Hello" }]
+            Messages = [new() { Role = "user", Content = JsonSerializer.SerializeToElement("Hello") }]
         };
 
         var result = await controller.ChatCompletions(request, CancellationToken.None);

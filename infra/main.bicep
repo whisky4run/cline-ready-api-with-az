@@ -13,6 +13,12 @@ param env string = 'dev'
 @description('デプロイリージョン')
 param location string = resourceGroup().location
 
+@description('デプロイする AI モデル名（例: gpt-4.1-mini）')
+param modelName string
+
+@description('モデルバージョン（例: 2025-04-14）')
+param modelVersion string
+
 // リソース名のユニークサフィックス（RG ID から生成・同一 RG なら冪等）
 var nameSuffix = take(uniqueString(resourceGroup().id), 8)
 
@@ -76,6 +82,18 @@ module roleAssignments 'modules/roleAssignments.bicep' = {
   }
 }
 
+// AI Foundry (AIServices) + モデルデプロイ
+module aiFoundry 'modules/aiFoundry.bicep' = {
+  name: 'aiFoundry'
+  params: {
+    location: location
+    nameSuffix: nameSuffix
+    modelName: modelName
+    modelVersion: modelVersion
+    tags: tags
+  }
+}
+
 // ─── デプロイ後の案内用アウトプット ──────────────────────────
 
 @description('ACR のログインサーバー')
@@ -89,3 +107,12 @@ output caEnvironmentId string = containerAppsEnv.outputs.caEnvironmentId
 
 @description('UAMI のリソース ID（app.bicep で使用）')
 output uamiId string = managedIdentity.outputs.uamiId
+
+@description('AI Foundry のエンドポイント URL')
+output aiEndpoint string = aiFoundry.outputs.endpoint
+
+@description('AI Foundry のアカウント名（deploy.sh が API キー取得に使用）')
+output aiAccountName string = aiFoundry.outputs.accountName
+
+@description('デプロイされたモデル名')
+output aiModelName string = aiFoundry.outputs.modelName

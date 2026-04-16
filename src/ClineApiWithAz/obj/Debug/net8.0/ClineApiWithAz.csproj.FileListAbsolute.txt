@@ -6,7 +6,6 @@
 /Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/ClineApiWithAz.runtimeconfig.json
 /Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/ClineApiWithAz.dll
 /Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/ClineApiWithAz.pdb
-/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/Azure.AI.Inference.dll
 /Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/Azure.Core.dll
 /Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/Microsoft.Bcl.AsyncInterfaces.dll
 /Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/Microsoft.Extensions.Configuration.Abstractions.dll
@@ -56,3 +55,5 @@
 /Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/OpenTelemetry.Instrumentation.SqlClient.dll
 /Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/OpenTelemetry.PersistentStorage.Abstractions.dll
 /Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/OpenTelemetry.PersistentStorage.FileSystem.dll
+/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/Azure.AI.OpenAI.dll
+/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/bin/Debug/net8.0/OpenAI.dll

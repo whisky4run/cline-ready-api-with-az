@@ -20,6 +20,9 @@ param azureAiApiKey string
 @secure()
 param apiKeyValue string
 
+@description('デプロイされた AI モデル名（例: gpt-4.1-mini）')
+param modelName string
+
 param appInsightsConnectionString string
 param uamiId string
 param tags object = {}
@@ -89,6 +92,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'ApplicationInsights__ConnectionString'
               value: appInsightsConnectionString
+            }
+            {
+              name: 'AzureAI__ModelName'
+              value: modelName
             }
             {
               name: 'ASPNETCORE_ENVIRONMENT'

@@ -23,11 +23,6 @@
 - **Owner**（推奨）
 - Contributor ＋ User Access Administrator
 
-### Azure AI Foundry の準備
-
-デプロイ前に対象のリソースグループに Azure AI Foundry（Cognitive Services）アカウントが作成済みであること。  
-エンドポイントと API キーはデプロイスクリプトが自動取得する。
-
 ---
 
 ## デプロイ手順
@@ -44,14 +39,15 @@ bash infra/deploy.sh
 
 1. サブスクリプションの選択（一覧から番号で選択）
 2. リソースグループの選択（一覧から番号で選択）
-3. AI Foundry アカウントの選択（自動検出、複数の場合は番号で選択）
-4. プロキシ API キーの入力（Cline から接続する際に使うキー。8文字以上）
-5. デプロイ環境の選択（`dev` または `prod`）
-6. 設定内容の確認
+3. AI モデル名の入力（デフォルト: `gpt-4.1-mini`）
+4. AI モデルバージョンの入力（デフォルト: `2025-04-14`）
+5. プロキシ API キーの入力（Cline から接続する際に使うキー。8文字以上）
+6. デプロイ環境の選択（`dev` または `prod`）
+7. 設定内容の確認
 
 スクリプトが自動で以下を実行する。
 
-- **フェーズ1**: ARM テンプレート（`arm/main.json`）をデプロイ（ACR・CA 環境・UAMI・監視）
+- **フェーズ1**: ARM テンプレート（`arm/main.json`）をデプロイ（ACR・CA 環境・UAMI・監視・**AI Foundry・モデルデプロイ**）
 - **フェーズ2**: Docker イメージをビルドして ACR へプッシュ
 - **フェーズ3**: ARM テンプレート（`arm/app.json`）をデプロイ（Container App）
 
@@ -65,7 +61,7 @@ bash infra/deploy.sh
   API Provider   : OpenAI Compatible
   Base URL       : https://ca-cline-api-xxxxxxxx.xxx.japaneast.azurecontainerapps.io/v1
   API Key        : (デプロイ時に設定したプロキシ API キー)
-  Model          : gpt-4.1-mini
+  Model          : (デプロイ時に入力したモデル名)
 ```
 
 ---
@@ -79,7 +75,7 @@ VS Code の Cline 拡張機能を以下のように設定する。
 | API Provider | `OpenAI Compatible` |
 | Base URL | `https://<Container App の FQDN>/v1` |
 | API Key | デプロイ時に入力したプロキシ API キー |
-| Model | `gpt-4.1-mini` |
+| Model | デプロイ時に入力したモデル名 |
 
 ---
 
@@ -151,7 +147,7 @@ bash infra/destroy.sh
 ```
 
 スクリプトが `project=cline-ready-api-with-az` タグ付きリソースの一覧を表示し、確認後に削除する。  
-AI Foundry などのタグなしリソースは削除されない。
+AI Foundry を含む全プロビジョニング済みリソースが削除される（タグのないリソースは対象外）。
 
 ---
 

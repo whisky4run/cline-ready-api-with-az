@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "HRateCxDMrsmwKkvQYfNHPoYTtq+D5Z7PzxMA+FFcjYUk0zILJMoxemYpMBWxmGW3KlflaQOvHDqgK8P9hnx1Q==",
+  "dgSpecHash": "ptEL8pkO2vYXXebNHgxfc/YFQsz7+7GUyUHXsAdaVj3RUK7AurvnHXj/8yBqx/TyY68zmNDL67QFjhr70Uaivw==",
   "success": true,
   "projectFilePath": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/tests/ClineApiWithAz.IntegrationTests/ClineApiWithAz.IntegrationTests.csproj",
   "expectedPackageFiles": [
-    "/Users/stohru/.nuget/packages/azure.ai.inference/1.0.0-beta.5/azure.ai.inference.1.0.0-beta.5.nupkg.sha512",
+    "/Users/stohru/.nuget/packages/azure.ai.openai/2.1.0/azure.ai.openai.2.1.0.nupkg.sha512",
     "/Users/stohru/.nuget/packages/azure.core/1.52.0/azure.core.1.52.0.nupkg.sha512",
     "/Users/stohru/.nuget/packages/azure.monitor.opentelemetry.exporter/1.7.0/azure.monitor.opentelemetry.exporter.1.7.0.nupkg.sha512",
     "/Users/stohru/.nuget/packages/castle.core/5.1.1/castle.core.5.1.1.nupkg.sha512",
@@ -53,6 +53,7 @@
     "/Users/stohru/.nuget/packages/netstandard.library/1.6.1/netstandard.library.1.6.1.nupkg.sha512",
     "/Users/stohru/.nuget/packages/newtonsoft.json/13.0.1/newtonsoft.json.13.0.1.nupkg.sha512",
     "/Users/stohru/.nuget/packages/nuget.frameworks/6.5.0/nuget.frameworks.6.5.0.nupkg.sha512",
+    "/Users/stohru/.nuget/packages/openai/2.1.0/openai.2.1.0.nupkg.sha512",
     "/Users/stohru/.nuget/packages/opentelemetry/1.15.1/opentelemetry.1.15.1.nupkg.sha512",
     "/Users/stohru/.nuget/packages/opentelemetry.api/1.15.1/opentelemetry.api.1.15.1.nupkg.sha512",
     "/Users/stohru/.nuget/packages/opentelemetry.api.providerbuilderextensions/1.15.1/opentelemetry.api.providerbuilderextensions.1.15.1.nupkg.sha512",

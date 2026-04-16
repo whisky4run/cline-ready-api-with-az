@@ -11,7 +11,11 @@ dev / prod の 2 環境を用意する。
 ## Azure リソース構成
 
 ```
-リソースグループ（既存。AI Foundry と共用）
+リソースグループ（既存または新規）
+│
+├── Azure AI Foundry（Cognitive Services / AIServices）
+│     ai-cline-api-{suffix}
+│     └── モデルデプロイ（指定モデル名 / GlobalStandard / 10K TPM）
 │
 ├── Azure Container Apps（API ホスティング）
 │     ca-cline-api-{suffix}
@@ -33,7 +37,7 @@ dev / prod の 2 環境を用意する。
 ```
 
 > `{suffix}` はリソースグループ ID から生成される 8 文字の一意サフィックス（同一 RG で冪等）。  
-> Cosmos DB・Key Vault は使用しない。
+> Cosmos DB・Key Vault は使用しない。AI Foundry を含む全リソースが ARM で自動プロビジョニングされる。
 
 ---
 
@@ -94,21 +98,19 @@ dev / prod の 2 環境を用意する。
 
 ```
 infra/
-├── main.bicep                     # フェーズ1: インフラ構築エントリーポイント
+├── main.bicep                     # フェーズ1: インフラ構築エントリーポイント（AI Foundry 含む）
 ├── app.bicep                      # フェーズ2: Container App デプロイ
 ├── arm/                           # build.sh で生成した ARM JSON（コミット対象）
 │   ├── main.json                  # main.bicep のコンパイル済み ARM テンプレート
 │   └── app.json                   # app.bicep のコンパイル済み ARM テンプレート
 ├── modules/
+│   ├── aiFoundry.bicep            # Azure AI Foundry + モデルデプロイ
 │   ├── containerApps.bicep        # Container Apps 環境
 │   ├── containerApp.bicep         # Container App 本体（secrets/env var 注入）
 │   ├── containerRegistry.bicep    # Azure Container Registry
 │   ├── monitoring.bicep           # Application Insights + Log Analytics
 │   ├── managedIdentity.bicep      # ユーザー割り当てマネージド ID
 │   └── roleAssignments.bicep      # UAMI への AcrPull ロール割り当て
-├── parameters/
-│   ├── dev.bicepparam             # dev 環境パラメータ（env, location）
-│   └── prod.bicepparam            # prod 環境パラメータ（env, location）
 ├── build.sh                       # Bicep → ARM JSON 変換スクリプト
 ├── deploy.sh                      # 対話型デプロイスクリプト（ARM 使用）
 └── destroy.sh                     # タグ付きリソース削除スクリプト
@@ -126,11 +128,12 @@ infra/
 
 【毎回のデプロイ】
   bash infra/deploy.sh
-    1. 対話入力（サブスクリプション、RG、AI Foundry、プロキシ API キー、環境）
-    2. arm/main.json をデプロイ（ACR・CA 環境・UAMI・監視）
-    3. Docker イメージをビルドして ACR へプッシュ
-    4. UAMI ロール伝播待機（90秒）
-    5. arm/app.json をデプロイ（Container App、secrets を --parameters で渡す）
+    1. 対話入力（サブスクリプション、RG、AI モデル名・バージョン、プロキシ API キー、環境）
+    2. arm/main.json をデプロイ（ACR・CA 環境・UAMI・監視・AI Foundry・モデルデプロイ）
+    3. フェーズ1出力から AI Foundry の API キーを取得
+    4. Docker イメージをビルドして ACR へプッシュ
+    5. UAMI ロール伝播待機（90秒）
+    6. arm/app.json をデプロイ（Container App、secrets を --parameters で渡す）
 ```
 
 シークレット（`azureAiApiKey`, `apiKeyValue`）は ARM テンプレートの `secureString` パラメータとして渡すため、デプロイ履歴に残らない。

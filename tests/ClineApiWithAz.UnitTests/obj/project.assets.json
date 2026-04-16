@@ -2,19 +2,19 @@
   "version": 3,
   "targets": {
     "net8.0": {
-      "Azure.AI.Inference/1.0.0-beta.5": {
+      "Azure.AI.OpenAI/2.1.0": {
         "type": "package",
         "dependencies": {
-          "Azure.Core": "1.46.1",
-          "System.ClientModel": "1.4.1"
+          "Azure.Core": "1.44.1",
+          "OpenAI": "2.1.0"
         },
         "compile": {
-          "lib/net8.0/Azure.AI.Inference.dll": {
+          "lib/netstandard2.0/Azure.AI.OpenAI.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net8.0/Azure.AI.Inference.dll": {
+          "lib/netstandard2.0/Azure.AI.OpenAI.dll": {
             "related": ".xml"
           }
         }
@@ -828,6 +828,23 @@
         },
         "runtime": {
           "lib/netstandard2.0/NuGet.Frameworks.dll": {}
+        }
+      },
+      "OpenAI/2.1.0": {
+        "type": "package",
+        "dependencies": {
+          "System.ClientModel": "1.2.1",
+          "System.Diagnostics.DiagnosticSource": "6.0.1"
+        },
+        "compile": {
+          "lib/net6.0/OpenAI.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/OpenAI.dll": {
+            "related": ".xml"
+          }
         }
       },
       "OpenTelemetry/1.15.1": {
@@ -2425,7 +2442,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
-          "Azure.AI.Inference": "1.0.0-beta.5",
+          "Azure.AI.OpenAI": "2.1.0",
           "Microsoft.ApplicationInsights.AspNetCore": "3.1.0"
         },
         "compile": {
@@ -2441,22 +2458,20 @@
     }
   },
   "libraries": {
-    "Azure.AI.Inference/1.0.0-beta.5": {
-      "sha512": "WlXuZqwMRlckVBc8bWyNX/eOyk0fhQNK8EaqjxlZSGpHMln7qPeB3UJ7PvyoYpuVRgihW7WHLDq/GjtHyBrM5A==",
+    "Azure.AI.OpenAI/2.1.0": {
+      "sha512": "doixr3tcsIcdzbzF9NxKt+6U0NKj6aPeOCPYONPsWjyf3gxVndVJAdjPcVdqeR/3vcRHXRgGnGlv+iXx5jMA4g==",
       "type": "package",
-      "path": "azure.ai.inference/1.0.0-beta.5",
+      "path": "azure.ai.openai/2.1.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "CHANGELOG.md",
         "README.md",
-        "azure.ai.inference.1.0.0-beta.5.nupkg.sha512",
-        "azure.ai.inference.nuspec",
+        "azure.ai.openai.2.1.0.nupkg.sha512",
+        "azure.ai.openai.nuspec",
         "azureicon.png",
-        "lib/net8.0/Azure.AI.Inference.dll",
-        "lib/net8.0/Azure.AI.Inference.xml",
-        "lib/netstandard2.0/Azure.AI.Inference.dll",
-        "lib/netstandard2.0/Azure.AI.Inference.xml"
+        "lib/netstandard2.0/Azure.AI.OpenAI.dll",
+        "lib/netstandard2.0/Azure.AI.OpenAI.xml"
       ]
     },
     "Azure.Core/1.52.0": {
@@ -3558,6 +3573,24 @@
         "lib/netstandard2.0/NuGet.Frameworks.dll",
         "nuget.frameworks.6.5.0.nupkg.sha512",
         "nuget.frameworks.nuspec"
+      ]
+    },
+    "OpenAI/2.1.0": {
+      "sha512": "zl72nyP4O94ZyEoCLoE8qoc5vp8kSJmRuqR+UdK+jNIjFJGWJYjsb4rAGpMWWRTbPYuk82E8myMJdVQurMLDnQ==",
+      "type": "package",
+      "path": "openai/2.1.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "CHANGELOG.md",
+        "OpenAI.png",
+        "README.md",
+        "lib/net6.0/OpenAI.dll",
+        "lib/net6.0/OpenAI.xml",
+        "lib/netstandard2.0/OpenAI.dll",
+        "lib/netstandard2.0/OpenAI.xml",
+        "openai.2.1.0.nupkg.sha512",
+        "openai.nuspec"
       ]
     },
     "OpenTelemetry/1.15.1": {

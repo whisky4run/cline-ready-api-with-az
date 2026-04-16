@@ -3,7 +3,7 @@
 # cline-ready-api-with-az — リソース削除スクリプト
 #
 # project=cline-ready-api-with-az タグが付いたリソースのみ削除します。
-# 手動作成済みの AI Foundry など、タグのないリソースは削除されません。
+# タグのないリソースは削除されません。
 #
 # 使用方法: bash infra/destroy.sh
 # ═══════════════════════════════════════════════════════════════
@@ -33,7 +33,7 @@ echo "║     cline-ready-api-with-az  リソース削除               ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 info "削除対象: project=cline-ready-api-with-az タグ付きリソースのみ"
-info "AI Foundry など手動作成リソースは削除されません。"
+info "タグのないリソースは削除されません。"
 echo ""
 
 # ─── サブスクリプション選択 ───────────────────────────────────
@@ -144,7 +144,7 @@ warn "警告: 上記リソースを削除します。この操作は元に戻せ
 echo "──────────────────────────────────────────────────────────"
 echo "  サブスクリプション : ${SUBSCRIPTION_NAME} (${SUBSCRIPTION_ID})"
 echo "  リソースグループ   : ${RESOURCE_GROUP}"
-echo "  ※ タグのないリソース（AI Foundry 等）は削除されません"
+echo "  ※ タグのないリソースは削除されません"
 echo "──────────────────────────────────────────────────────────"
 echo ""
 
@@ -166,6 +166,7 @@ RESOURCE_TYPES_IN_ORDER=(
   "Microsoft.ContainerRegistry/registries"
   "Microsoft.Insights/components"
   "Microsoft.OperationalInsights/workspaces"
+  "Microsoft.CognitiveServices/accounts"
   "Microsoft.ManagedIdentity/userAssignedIdentities"
 )
 

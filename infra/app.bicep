@@ -24,6 +24,9 @@ param azureAiApiKey string
 @secure()
 param apiKeyValue string
 
+@description('デプロイされた AI モデル名（例: gpt-4.1-mini）')
+param modelName string
+
 // main.bicep と同じ命名規則（uniqueString は同一 RG で冪等）
 var nameSuffix = take(uniqueString(resourceGroup().id), 8)
 
@@ -65,6 +68,7 @@ module containerApp 'modules/containerApp.bicep' = {
     azureAiEndpoint: azureAiEndpoint
     azureAiApiKey: azureAiApiKey
     apiKeyValue: apiKeyValue
+    modelName: modelName
     appInsightsConnectionString: appInsights.properties.ConnectionString
     uamiId: uami.id
     tags: tags
