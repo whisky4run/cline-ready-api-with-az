@@ -11,10 +11,13 @@
       "Bash(chmod +x /Users/stohru/DEV/GitHub/cline-ready-api-with-az/infra/deploy.sh /Users/stohru/DEV/GitHub/cline-ready-api-with-az/infra/destroy.sh)",
       "Bash(docker build:*)",
       "Bash(chmod +x /Users/stohru/DEV/GitHub/cline-ready-api-with-az/infra/deploy.sh)",
-      "Bash(az bicep *)"
+      "Bash(az bicep *)",
+      "Bash(chmod +x infra/build.sh infra/deploy.sh infra/destroy.sh)",
+      "Bash(bash infra/build.sh)"
     ],
     "additionalDirectories": [
-      "/Users/stohru/DEV/GitHub/cline-ready-api-with-az"
+      "/Users/stohru/DEV/GitHub/cline-ready-api-with-az",
+      "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/Services"
     ]
   }
 }

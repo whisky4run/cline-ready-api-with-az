@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ClineApiWithAz.UnitTests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+999b3da5d959b5cfd5096dd53bea5e180777d687")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dbc24e239317d2db31ed0deb56ea4313453a9bc4")]
 [assembly: System.Reflection.AssemblyProductAttribute("ClineApiWithAz.UnitTests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ClineApiWithAz.UnitTests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

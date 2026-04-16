@@ -1,59 +1,47 @@
 using System.Text.Json;
 using ClineApiWithAz.Middleware;
-using ClineApiWithAz.Models.Domain;
 using ClineApiWithAz.Models.Responses;
-using ClineApiWithAz.Services;
 using Microsoft.AspNetCore.Http;
-using Moq;
+using Microsoft.Extensions.Configuration;
 
 namespace ClineApiWithAz.UnitTests.Middleware;
 
 public class ApiKeyAuthMiddlewareTests
 {
-    private readonly Mock<IApiKeyService> _apiKeyServiceMock = new();
+    private const string ValidApiKey = "sk-test-valid";
 
-    private ApiKeyAuthMiddleware CreateMiddleware(RequestDelegate next)
-        => new(next, _apiKeyServiceMock.Object);
+    private static ApiKeyAuthMiddleware CreateMiddleware(RequestDelegate next, string? configuredKey = ValidApiKey)
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ApiKey:Value"] = configuredKey
+            })
+            .Build();
+        return new ApiKeyAuthMiddleware(next, config);
+    }
 
     [Fact]
-    public async Task 有効なAPIキーの場合_次のミドルウェアへ進みメンバー情報をItemsに格納する()
+    public async Task 有効なAPIキーの場合_次のミドルウェアへ進む()
     {
-        // Arrange
-        var member = new Member { Id = "m-001", Name = "Alice", Role = "member", IsActive = true };
-        _apiKeyServiceMock
-            .Setup(s => s.ValidateAndGetMemberAsync("valid-key"))
-            .ReturnsAsync(member);
-
         var nextCalled = false;
         var middleware = CreateMiddleware(_ => { nextCalled = true; return Task.CompletedTask; });
-        var context = CreateHttpContext("Bearer valid-key");
+        var context = CreateHttpContext($"Bearer {ValidApiKey}");
 
-        // Act
         await middleware.InvokeAsync(context);
 
-        // Assert
         Assert.True(nextCalled);
-        Assert.Equal("m-001", context.Items[ApiKeyAuthMiddleware.MemberIdKey]);
-        Assert.Equal("Alice", context.Items[ApiKeyAuthMiddleware.MemberNameKey]);
-        Assert.Equal("member", context.Items[ApiKeyAuthMiddleware.MemberRoleKey]);
     }
 
     [Fact]
     public async Task 無効なAPIキーの場合_401を返し次のミドルウェアへ進まない()
     {
-        // Arrange
-        _apiKeyServiceMock
-            .Setup(s => s.ValidateAndGetMemberAsync(It.IsAny<string>()))
-            .ReturnsAsync((Member?)null);
-
         var nextCalled = false;
         var middleware = CreateMiddleware(_ => { nextCalled = true; return Task.CompletedTask; });
-        var context = CreateHttpContext("Bearer invalid-key");
+        var context = CreateHttpContext("Bearer wrong-key");
 
-        // Act
         await middleware.InvokeAsync(context);
 
-        // Assert
         Assert.False(nextCalled);
         Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
 
@@ -65,15 +53,12 @@ public class ApiKeyAuthMiddlewareTests
     [Fact]
     public async Task Authorizationヘッダーがない場合_401を返す()
     {
-        // Arrange
         var nextCalled = false;
         var middleware = CreateMiddleware(_ => { nextCalled = true; return Task.CompletedTask; });
         var context = CreateHttpContext(null);
 
-        // Act
         await middleware.InvokeAsync(context);
 
-        // Assert
         Assert.False(nextCalled);
         Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
     }
@@ -81,36 +66,14 @@ public class ApiKeyAuthMiddlewareTests
     [Fact]
     public async Task Bearer以外のスキームの場合_401を返す()
     {
-        // Arrange
         var nextCalled = false;
         var middleware = CreateMiddleware(_ => { nextCalled = true; return Task.CompletedTask; });
         var context = CreateHttpContext("Basic dXNlcjpwYXNz");
 
-        // Act
         await middleware.InvokeAsync(context);
 
-        // Assert
         Assert.False(nextCalled);
         Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
-    }
-
-    [Fact]
-    public async Task 管理者ロールの場合_roleがadminとしてItemsに格納される()
-    {
-        // Arrange
-        var admin = new Member { Id = "m-admin", Name = "Admin", Role = "admin", IsActive = true };
-        _apiKeyServiceMock
-            .Setup(s => s.ValidateAndGetMemberAsync("admin-key"))
-            .ReturnsAsync(admin);
-
-        var middleware = CreateMiddleware(_ => Task.CompletedTask);
-        var context = CreateHttpContext("Bearer admin-key");
-
-        // Act
-        await middleware.InvokeAsync(context);
-
-        // Assert
-        Assert.Equal("admin", context.Items[ApiKeyAuthMiddleware.MemberRoleKey]);
     }
 
     private static HttpContext CreateHttpContext(string? authHeader)

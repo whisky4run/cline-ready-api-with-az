@@ -3,40 +3,37 @@
 ## 概要
 
 Azure 上で動作するプロキシ API システムのインフラ構成。
-IaC は Bicep で管理し、dev / prod の2環境を用意する。
+IaC は Bicep で管理するが、デプロイは Bicep を ARM JSON にビルドした上で ARM テンプレートで行う。
+dev / prod の 2 環境を用意する。
 
 ---
 
 ## Azure リソース構成
 
 ```
-リソースグループ: rg-cline-api-{env}
+リソースグループ（既存。AI Foundry と共用）
 │
 ├── Azure Container Apps（API ホスティング）
-│     ca-cline-api-{env}
+│     ca-cline-api-{suffix}
 │
 ├── Azure Container Apps 環境
-│     cae-cline-api-{env}
-│
-├── Azure Cosmos DB（データストア）
-│     cosmos-cline-api-{env}
-│     └── Database: ClineApiDb
-│           ├── Container: ApiKeys
-│           ├── Container: UsageRecords
-│           └── Container: Members
-│
-├── Azure Key Vault（シークレット管理）
-│     kv-cline-api-{env}
+│     cae-cline-api-{suffix}
 │
 ├── Azure Container Registry（コンテナイメージ）
-│     acr-clineapi-{env}
+│     acrclineapi{suffix}
 │
 ├── Azure Application Insights（監視）
-│     appi-cline-api-{env}
+│     appi-cline-api-{suffix}
 │
-└── Azure Log Analytics Workspace
-      law-cline-api-{env}
+├── Azure Log Analytics Workspace
+│     law-cline-api-{suffix}
+│
+└── ユーザー割り当てマネージド ID（UAMI）
+      id-cline-api-{suffix}
 ```
+
+> `{suffix}` はリソースグループ ID から生成される 8 文字の一意サフィックス（同一 RG で冪等）。  
+> Cosmos DB・Key Vault は使用しない。
 
 ---
 
@@ -48,110 +45,73 @@ IaC は Bicep で管理し、dev / prod の2環境を用意する。
 |---|---|---|
 | CPU | 0.5 vCPU | 1.0 vCPU |
 | メモリ | 1.0 Gi | 2.0 Gi |
-| 最小レプリカ数 | 0（スケールダウンあり） | 1 |
+| 最小レプリカ数 | 0（夜間スケールダウン） | 1 |
 | 最大レプリカ数 | 3 | 10 |
-| スケールルール | HTTP リクエスト数（閾値: 100 req/s） | 同左 |
+| スケールルール | HTTP 同時接続数（閾値: 100） | 同左 |
 | イングレス | 外部公開（HTTPS） | 外部公開（HTTPS） |
 
-- マネージド ID を使用して Key Vault・Cosmos DB にアクセス（接続文字列を環境変数に直接持たない）
-- コンテナイメージは Azure Container Registry からプル
+シークレットは Container Apps のネイティブ secrets 機能で管理する。
 
-### Azure Cosmos DB
+| シークレット名（CA内） | 環境変数名 | 内容 |
+|---|---|---|
+| `azure-ai-api-key` | `AzureAI__ApiKey` | Azure AI Foundry の API キー |
+| `api-key-value` | `ApiKey__Value` | Cline からの認証に使う API キー |
 
-| 項目 | 設定値 |
+その他の環境変数（非シークレット）:
+
+| 環境変数名 | 内容 |
 |---|---|
-| API 種別 | NoSQL（Core API） |
-| 容量モード | サーバーレス（dev）/ プロビジョニング済み（prod） |
-| 冗長性 | ローカル冗長（dev）/ ゾーン冗長（prod） |
-| バックアップ | 定期バックアップ（デフォルト） |
-
-#### コンテナ定義
-
-**ApiKeys**
-- パーティションキー: `/memberId`
-- 用途: メンバーの API キー（ハッシュ）を管理
-
-**UsageRecords**
-- パーティションキー: `/memberId`
-- 用途: リクエストごとのトークン使用量を記録
-- TTL: 設定しない（永続保存）
-
-**Members**
-- パーティションキー: `/id`
-- 用途: メンバー情報（名前、権限、有効フラグ）を管理
-
-### Azure Key Vault
-
-以下のシークレットを管理する：
-
-| シークレット名 | 内容 |
-|---|---|
-| `AzureAI--Endpoint` | Azure AI Foundry の推論エンドポイント URL |
-| `AzureAI--ApiKey` | Azure AI Foundry の API キー |
-| `CosmosDb--ConnectionString` | Cosmos DB の接続文字列 |
-
-- Container Apps のマネージド ID に Key Vault Secrets User ロールを付与
-- アプリ起動時に Azure SDK 経由でシークレットを取得
+| `AzureAI__Endpoint` | Azure AI Foundry のエンドポイント URL |
+| `ApplicationInsights__ConnectionString` | Application Insights 接続文字列 |
+| `ASPNETCORE_ENVIRONMENT` | `Development`（dev）/ `Production`（prod） |
 
 ### Azure Container Registry
 
-- sku: Basic（dev）/ Standard（prod）
-- 管理者アカウント: 無効（マネージド ID でプル）
-- Container Apps の マネージド ID に AcrPull ロールを付与
+- SKU: Basic（dev）/ Standard（prod）
+- 管理者アカウント: 無効（UAMI の AcrPull ロールでプル）
 
 ### Azure Application Insights
 
 - サンプリング率: 100%（dev）/ 10%（prod）
 - Log Analytics Workspace と連携
-- 以下をカスタム追跡:
-  - リクエストごとのメンバーID（カスタムプロパティ）
-  - Azure AI Foundry へのレイテンシ（依存関係トラッキング）
-  - トークン使用量（カスタムメトリクス）
+
+### ユーザー割り当てマネージド ID（UAMI）
+
+- Container App のコンテナ実行 ID として使用
+- 付与ロール: `AcrPull`（ACR からのイメージ取得のみ）
 
 ---
 
 ## ネットワーク設計
 
-- Container Apps のイングレスは HTTPS のみ許可（HTTP → HTTPS リダイレクトなし、HTTP は拒否）
-- dev 環境は IP 制限なし（開発チームメンバーが自由にアクセス）
-- prod 環境も IP 制限なし（API キー認証で保護）
-- Cosmos DB・Key Vault はサービスエンドポイントまたは Private Endpoint（prod のみ、将来対応）
+- Container Apps のイングレスは HTTPS のみ（Container Apps が自動で TLS 終端）
+- IP 制限なし（API キー認証で保護）
+- dev / prod ともに同一構成
 
 ---
 
-## 環境別設定
-
-### dev 環境
-
-- リソース名サフィックス: `-dev`
-- Cosmos DB: サーバーレス（コスト最適化）
-- Container Apps: 最小レプリカ 0（夜間スケールダウン）
-- Log level: Debug
-
-### prod 環境
-
-- リソース名サフィックス: `-prod`
-- Cosmos DB: プロビジョニング済み（400 RU/s、オートスケール上限 4000 RU/s）
-- Container Apps: 最小レプリカ 1（コールドスタートを防ぐ）
-- Log level: Warning
-
----
-
-## Bicep ファイル構成
+## Bicep / ARM ファイル構成
 
 ```
 infra/
-├── main.bicep                     # エントリーポイント（全モジュール呼び出し）
+├── main.bicep                     # フェーズ1: インフラ構築エントリーポイント
+├── app.bicep                      # フェーズ2: Container App デプロイ
+├── arm/                           # build.sh で生成した ARM JSON（コミット対象）
+│   ├── main.json                  # main.bicep のコンパイル済み ARM テンプレート
+│   └── app.json                   # app.bicep のコンパイル済み ARM テンプレート
 ├── modules/
-│   ├── containerApps.bicep        # Container Apps + 環境
-│   ├── cosmosDb.bicep             # Cosmos DB + コンテナ定義
-│   ├── keyVault.bicep             # Key Vault + シークレット（空値で作成）
-│   ├── containerRegistry.bicep   # Azure Container Registry
+│   ├── containerApps.bicep        # Container Apps 環境
+│   ├── containerApp.bicep         # Container App 本体（secrets/env var 注入）
+│   ├── containerRegistry.bicep    # Azure Container Registry
 │   ├── monitoring.bicep           # Application Insights + Log Analytics
-│   └── roleAssignments.bicep      # マネージド ID へのロール割り当て
-└── parameters/
-    ├── dev.bicepparam             # dev 環境パラメータ
-    └── prod.bicepparam            # prod 環境パラメータ
+│   ├── managedIdentity.bicep      # ユーザー割り当てマネージド ID
+│   └── roleAssignments.bicep      # UAMI への AcrPull ロール割り当て
+├── parameters/
+│   ├── dev.bicepparam             # dev 環境パラメータ（env, location）
+│   └── prod.bicepparam            # prod 環境パラメータ（env, location）
+├── build.sh                       # Bicep → ARM JSON 変換スクリプト
+├── deploy.sh                      # 対話型デプロイスクリプト（ARM 使用）
+└── destroy.sh                     # タグ付きリソース削除スクリプト
 ```
 
 ---
@@ -159,18 +119,21 @@ infra/
 ## デプロイフロー
 
 ```
-1. Bicep でインフラをプロビジョニング
-   az deployment group create --template-file infra/main.bicep \
-     --parameters infra/parameters/dev.bicepparam
+【Bicep を変更したとき（初回含む）】
+  bash infra/build.sh
+  → infra/arm/main.json, infra/arm/app.json を再生成
+  → git add infra/arm/ && git commit
 
-2. Key Vault にシークレットを手動登録
-   （初回のみ。以降は変更時のみ）
-
-3. コンテナイメージをビルドして ACR へプッシュ
-   az acr build --registry <acr-name> --image cline-api:latest .
-
-4. Container Apps がACRから最新イメージを取得して自動デプロイ
+【毎回のデプロイ】
+  bash infra/deploy.sh
+    1. 対話入力（サブスクリプション、RG、AI Foundry、プロキシ API キー、環境）
+    2. arm/main.json をデプロイ（ACR・CA 環境・UAMI・監視）
+    3. Docker イメージをビルドして ACR へプッシュ
+    4. UAMI ロール伝播待機（90秒）
+    5. arm/app.json をデプロイ（Container App、secrets を --parameters で渡す）
 ```
+
+シークレット（`azureAiApiKey`, `apiKeyValue`）は ARM テンプレートの `secureString` パラメータとして渡すため、デプロイ履歴に残らない。
 
 ---
 
@@ -179,10 +142,9 @@ infra/
 | リソース | dev | prod |
 |---|---|---|
 | Container Apps | ~$5（夜間スケールゼロ） | ~$30（常時1レプリカ） |
-| Cosmos DB | ~$1（サーバーレス、少量使用） | ~$25（400 RU/s） |
-| Key Vault | ~$1 | ~$1 |
 | Container Registry | ~$5（Basic） | ~$10（Standard） |
 | Application Insights | ~$1（少量） | ~$5〜（使用量次第） |
-| **合計** | **~$13** | **~$71** |
+| **合計** | **~$11** | **~$45** |
 
-※ AI Foundry の推論コストは別途（トークン使用量に依存）
+※ AI Foundry の推論コストは別途（トークン使用量に依存）  
+※ Cosmos DB・Key Vault を廃止したことで main ブランチより ~$26/月（dev）削減

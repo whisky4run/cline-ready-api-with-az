@@ -1,0 +1,285 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.42.1.51946",
+      "templateHash": "11637021842297620537"
+    }
+  },
+  "parameters": {
+    "env": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": [
+        "dev",
+        "prod"
+      ],
+      "metadata": {
+        "description": "デプロイ環境（dev / prod）"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "デプロイリージョン"
+      }
+    },
+    "azureAiEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AI Foundry エンドポイント URL"
+      }
+    },
+    "azureAiApiKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure AI Foundry API キー"
+      }
+    },
+    "apiKeyValue": {
+      "type": "securestring",
+      "metadata": {
+        "description": "クライアント認証用 API キー（Cline から渡す値）"
+      }
+    }
+  },
+  "variables": {
+    "nameSuffix": "[take(uniqueString(resourceGroup().id), 8)]",
+    "tags": {
+      "project": "cline-ready-api-with-az",
+      "environment": "[parameters('env')]",
+      "managedBy": "bicep"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "containerApp",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "nameSuffix": {
+            "value": "[variables('nameSuffix')]"
+          },
+          "env": {
+            "value": "[parameters('env')]"
+          },
+          "caEnvironmentId": {
+            "value": "[resourceId('Microsoft.App/managedEnvironments', format('cae-cline-api-{0}', variables('nameSuffix')))]"
+          },
+          "acrLoginServer": {
+            "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', format('acrclineapi{0}', variables('nameSuffix'))), '2023-07-01').loginServer]"
+          },
+          "azureAiEndpoint": {
+            "value": "[parameters('azureAiEndpoint')]"
+          },
+          "azureAiApiKey": {
+            "value": "[parameters('azureAiApiKey')]"
+          },
+          "apiKeyValue": {
+            "value": "[parameters('apiKeyValue')]"
+          },
+          "appInsightsConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Insights/components', format('appi-cline-api-{0}', variables('nameSuffix'))), '2020-02-02').ConnectionString]"
+          },
+          "uamiId": {
+            "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-cline-api-{0}', variables('nameSuffix')))]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.42.1.51946",
+              "templateHash": "12877445054744082723"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "nameSuffix": {
+              "type": "string"
+            },
+            "env": {
+              "type": "string"
+            },
+            "caEnvironmentId": {
+              "type": "string"
+            },
+            "acrLoginServer": {
+              "type": "string"
+            },
+            "azureAiEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure AI Foundry エンドポイント URL"
+              }
+            },
+            "azureAiApiKey": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Azure AI Foundry API キー"
+              }
+            },
+            "apiKeyValue": {
+              "type": "securestring",
+              "metadata": {
+                "description": "クライアント認証用 API キー（Cline から渡す値）"
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "string"
+            },
+            "uamiId": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {}
+            }
+          },
+          "variables": {
+            "caName": "[format('ca-cline-api-{0}', parameters('nameSuffix'))]",
+            "containerImage": "[format('{0}/cline-api:latest', parameters('acrLoginServer'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2024-03-01",
+              "name": "[variables('caName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('uamiId'))]": {}
+                }
+              },
+              "properties": {
+                "environmentId": "[parameters('caEnvironmentId')]",
+                "configuration": {
+                  "ingress": {
+                    "external": true,
+                    "targetPort": 8080,
+                    "transport": "http",
+                    "allowInsecure": false
+                  },
+                  "registries": [
+                    {
+                      "server": "[parameters('acrLoginServer')]",
+                      "identity": "[parameters('uamiId')]"
+                    }
+                  ],
+                  "secrets": [
+                    {
+                      "name": "azure-ai-api-key",
+                      "value": "[parameters('azureAiApiKey')]"
+                    },
+                    {
+                      "name": "api-key-value",
+                      "value": "[parameters('apiKeyValue')]"
+                    }
+                  ]
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "cline-api",
+                      "image": "[variables('containerImage')]",
+                      "resources": {
+                        "cpu": "[if(equals(parameters('env'), 'prod'), json('1.0'), json('0.5'))]",
+                        "memory": "[if(equals(parameters('env'), 'prod'), '2Gi', '1Gi')]"
+                      },
+                      "env": [
+                        {
+                          "name": "AzureAI__Endpoint",
+                          "value": "[parameters('azureAiEndpoint')]"
+                        },
+                        {
+                          "name": "AzureAI__ApiKey",
+                          "secretRef": "azure-ai-api-key"
+                        },
+                        {
+                          "name": "ApiKey__Value",
+                          "secretRef": "api-key-value"
+                        },
+                        {
+                          "name": "ApplicationInsights__ConnectionString",
+                          "value": "[parameters('appInsightsConnectionString')]"
+                        },
+                        {
+                          "name": "ASPNETCORE_ENVIRONMENT",
+                          "value": "[if(equals(parameters('env'), 'prod'), 'Production', 'Development')]"
+                        }
+                      ]
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": "[if(equals(parameters('env'), 'prod'), 1, 0)]",
+                    "maxReplicas": "[if(equals(parameters('env'), 'prod'), 10, 3)]",
+                    "rules": [
+                      {
+                        "name": "http-scaling",
+                        "http": {
+                          "metadata": {
+                            "concurrentRequests": "100"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "containerAppId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/containerApps', variables('caName'))]"
+            },
+            "containerAppName": {
+              "type": "string",
+              "value": "[variables('caName')]"
+            },
+            "containerAppFqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/containerApps', variables('caName')), '2024-03-01').configuration.ingress.fqdn]"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "apiEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Container App の FQDN（API のベース URL）"
+      },
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.Resources/deployments', 'containerApp'), '2025-04-01').outputs.containerAppFqdn.value)]"
+    },
+    "containerAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Container App 名"
+      },
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerApp'), '2025-04-01').outputs.containerAppName.value]"
+    }
+  }
+}

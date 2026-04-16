@@ -122,17 +122,6 @@ if [[ -z "${TAGGED_RESOURCES}" ]] || [[ "${TAGGED_RESOURCES}" == *"(empty)"* ]];
   echo ""
   read -r -p "リソースグループごと削除する場合は「${RESOURCE_GROUP}」と入力してください（スキップは Enter）: " RG_DELETE_CONFIRM
   if [[ "${RG_DELETE_CONFIRM}" == "${RESOURCE_GROUP}" ]]; then
-    # Key Vault 名を事前取得（パージ用）
-    KV_NAMES=$(az keyvault list \
-      --subscription "${SUBSCRIPTION_ID}" \
-      --resource-group "${RESOURCE_GROUP}" \
-      --query "[].name" \
-      --output tsv 2>/dev/null || true)
-    KV_LOCATION=$(az group show \
-      --subscription "${SUBSCRIPTION_ID}" \
-      --name "${RESOURCE_GROUP}" \
-      --query location --output tsv 2>/dev/null || echo "japaneast")
-
     info "リソースグループ「${RESOURCE_GROUP}」を削除しています..."
     az group delete \
       --subscription "${SUBSCRIPTION_ID}" \
@@ -140,14 +129,6 @@ if [[ -z "${TAGGED_RESOURCES}" ]] || [[ "${TAGGED_RESOURCES}" == *"(empty)"* ]];
       --yes \
       --no-wait
     success "削除リクエストを送信しました。バックグラウンドで削除が進行中です。"
-
-    if [[ -n "${KV_NAMES}" ]]; then
-      echo ""
-      info "Key Vault パージ用コマンド（7日間のソフト削除期間を即時解除）:"
-      for KV_NAME in ${KV_NAMES}; do
-        echo "  az keyvault purge --subscription ${SUBSCRIPTION_ID} --name ${KV_NAME} --location ${KV_LOCATION}"
-      done
-    fi
   else
     info "削除をスキップしました。"
   fi
@@ -156,20 +137,6 @@ fi
 
 echo "${TAGGED_RESOURCES}"
 echo ""
-
-# ─── Key Vault 名を事前取得（パージ用） ──────────────────────
-KV_NAMES=$(az resource list \
-  --subscription "${SUBSCRIPTION_ID}" \
-  --resource-group "${RESOURCE_GROUP}" \
-  --tag "${TAG_FILTER}" \
-  --resource-type "Microsoft.KeyVault/vaults" \
-  --query "[].name" \
-  --output tsv 2>/dev/null || true)
-
-KV_LOCATION=$(az group show \
-  --subscription "${SUBSCRIPTION_ID}" \
-  --name "${RESOURCE_GROUP}" \
-  --query location --output tsv 2>/dev/null || echo "japaneast")
 
 # ─── 警告と確認 ───────────────────────────────────────────────
 echo "──────────────────────────────────────────────────────────"
@@ -191,16 +158,12 @@ echo ""
 
 # ═══════════════════════════════════════════════════════════════
 # タグ付きリソースを依存関係の順に削除
+# Container App → CA環境 → ACR → AppInsights → LogAnalytics → UAMI
 # ═══════════════════════════════════════════════════════════════
-
-# 削除するリソースタイプを依存関係の順に定義
-# Container App → CA環境 → ACR → KV → Cosmos → AppInsights → LogAnalytics
 RESOURCE_TYPES_IN_ORDER=(
   "Microsoft.App/containerApps"
   "Microsoft.App/managedEnvironments"
   "Microsoft.ContainerRegistry/registries"
-  "Microsoft.KeyVault/vaults"
-  "Microsoft.DocumentDB/databaseAccounts"
   "Microsoft.Insights/components"
   "Microsoft.OperationalInsights/workspaces"
   "Microsoft.ManagedIdentity/userAssignedIdentities"
@@ -245,17 +208,3 @@ done
 
 success "すべてのタグ付きリソースを削除しました。"
 echo ""
-
-# ─── Key Vault のパージ（ソフト削除済みボールトの完全削除） ──
-if [[ -n "${KV_NAMES}" ]]; then
-  echo "──────────────────────────────────────────────────────────"
-  info "Key Vault のソフト削除済みボールトの完全削除（パージ）"
-  echo "──────────────────────────────────────────────────────────"
-  warn "Key Vault はソフト削除のため、削除後も保留期間（7日）残ります。"
-  echo "  今すぐパージする場合は以下のコマンドを実行してください:"
-  echo ""
-  for KV_NAME in ${KV_NAMES}; do
-    echo "  az keyvault purge --subscription ${SUBSCRIPTION_ID} --name ${KV_NAME} --location ${KV_LOCATION}"
-  done
-  echo ""
-fi

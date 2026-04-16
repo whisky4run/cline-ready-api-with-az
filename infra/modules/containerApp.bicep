@@ -1,5 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // Azure Container App 本体（環境は既存のものを使用）
+// シークレットは Container App の secrets に直接保存（Key Vault 不要）
 // イメージを ACR にプッシュした後に app.bicep から呼び出す
 // ─────────────────────────────────────────────────────────────
 param location string
@@ -7,7 +8,18 @@ param nameSuffix string
 param env string
 param caEnvironmentId string
 param acrLoginServer string
-param keyVaultUri string
+
+@description('Azure AI Foundry エンドポイント URL')
+param azureAiEndpoint string
+
+@description('Azure AI Foundry API キー')
+@secure()
+param azureAiApiKey string
+
+@description('クライアント認証用 API キー（Cline から渡す値）')
+@secure()
+param apiKeyValue string
+
 param appInsightsConnectionString string
 param uamiId string
 param tags object = {}
@@ -15,9 +27,6 @@ param tags object = {}
 var caName = 'ca-cline-api-${nameSuffix}'
 var containerImage = '${acrLoginServer}/cline-api:latest'
 
-// Container App 本体（ユーザー割り当てマネージド ID を使用）
-// フェーズ1でロール割り当て済みの UAMI を使うことで、
-// イメージ pull 時に AcrPull 権限が確実に伝播している
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: caName
   location: location
@@ -43,7 +52,17 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           identity: uamiId
         }
       ]
-      secrets: []
+      // シークレットは Container App に直接保存（Key Vault 参照不要）
+      secrets: [
+        {
+          name: 'azure-ai-api-key'
+          value: azureAiApiKey
+        }
+        {
+          name: 'api-key-value'
+          value: apiKeyValue
+        }
+      ]
     }
     template: {
       containers: [
@@ -55,14 +74,17 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             memory: env == 'prod' ? '2Gi' : '1Gi'
           }
           env: [
-            // Key Vault 参照（マネージド ID で取得）
             {
               name: 'AzureAI__Endpoint'
-              value: '${keyVaultUri}secrets/AzureAI--Endpoint'
+              value: azureAiEndpoint
             }
             {
-              name: 'KeyVault__Uri'
-              value: keyVaultUri
+              name: 'AzureAI__ApiKey'
+              secretRef: 'azure-ai-api-key'
+            }
+            {
+              name: 'ApiKey__Value'
+              secretRef: 'api-key-value'
             }
             {
               name: 'ApplicationInsights__ConnectionString'

@@ -47,25 +47,9 @@
               "target": "Package",
               "version": "[1.0.0-beta.5, )"
             },
-            "Azure.Extensions.AspNetCore.Configuration.Secrets": {
-              "target": "Package",
-              "version": "[1.5.0, )"
-            },
-            "Azure.Identity": {
-              "target": "Package",
-              "version": "[1.21.0, )"
-            },
             "Microsoft.ApplicationInsights.AspNetCore": {
               "target": "Package",
               "version": "[3.1.0, )"
-            },
-            "Microsoft.Azure.Cosmos": {
-              "target": "Package",
-              "version": "[3.58.0, )"
-            },
-            "Newtonsoft.Json": {
-              "target": "Package",
-              "version": "[13.0.4, )"
             }
           },
           "imports": [

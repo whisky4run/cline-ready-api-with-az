@@ -1,18 +1,10 @@
 using System.Text.Json;
 using ClineApiWithAz.Models.Responses;
-using ClineApiWithAz.Services;
 
 namespace ClineApiWithAz.Middleware;
 
-public class ApiKeyAuthMiddleware(RequestDelegate next, IApiKeyService apiKeyService)
+public class ApiKeyAuthMiddleware(RequestDelegate next, IConfiguration configuration)
 {
-    // HttpContext.Items に格納するキー
-    public const string MemberIdKey = "MemberId";
-    public const string MemberNameKey = "MemberName";
-    public const string MemberRoleKey = "MemberRole";
-    public const string MemberEntraIdKey = "MemberEntraId";
-    public const string MemberEmailKey = "MemberEmail";
-
     public async Task InvokeAsync(HttpContext context)
     {
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
@@ -23,18 +15,13 @@ public class ApiKeyAuthMiddleware(RequestDelegate next, IApiKeyService apiKeySer
         }
 
         var apiKey = authHeader["Bearer ".Length..].Trim();
-        var member = await apiKeyService.ValidateAndGetMemberAsync(apiKey);
-        if (member is null)
+        var expectedKey = configuration["ApiKey:Value"];
+
+        if (string.IsNullOrEmpty(expectedKey) || apiKey != expectedKey)
         {
             await WriteUnauthorizedAsync(context, "Invalid API key.");
             return;
         }
-
-        context.Items[MemberIdKey] = member.Id;
-        context.Items[MemberNameKey] = member.Name;
-        context.Items[MemberRoleKey] = member.Role;
-        context.Items[MemberEntraIdKey] = member.EntraId;
-        context.Items[MemberEmailKey] = member.Email;
 
         await next(context);
     }
