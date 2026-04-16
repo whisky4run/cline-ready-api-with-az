@@ -180,28 +180,28 @@ az ad user show --id alice@company.com --query "{name:displayName, oid:id, email
 
 #### 4-2. メンバードキュメントの登録
 
-**`Members` コンテナ**（パーティションキー: `/id`）にドキュメントを挿入します。  
-`entraId` に前のステップで取得した Object ID を設定してください。
+Azure CLI には Cosmos DB ドキュメントの挿入コマンドがないため、**Azure Portal のデータエクスプローラー**を使用します。
 
-```bash
-COSMOS_ACCOUNT="cosmos-cline-api-xxxxxxxx"  # ステップ1の出力を使用
-RESOURCE_GROUP="rg-cline-api"
+1. [Azure Portal](https://portal.azure.com) を開く
+2. 作成した Cosmos DB アカウントに移動
+3. 左メニューの **データ エクスプローラー** を開く
+4. `ClineApiDb` → `Members` → **Items** を選択
+5. ツールバーの **New Item** をクリック
+6. 以下の JSON を貼り付けて **Save** をクリック
 
-az cosmosdb sql document create \
-  --account-name "${COSMOS_ACCOUNT}" \
-  --resource-group "${RESOURCE_GROUP}" \
-  --database-name "ClineApiDb" \
-  --container-name "Members" \
-  --body '{
-    "id": "member-001",
-    "name": "Alice",
-    "role": "admin",
-    "entraId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "email": "alice@company.com",
-    "isActive": true,
-    "createdAt": "2026-04-13T00:00:00Z"
-  }'
+```json
+{
+  "id": "member-001",
+  "name": "Alice",
+  "role": "admin",
+  "entraId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "email": "alice@company.com",
+  "isActive": true,
+  "createdAt": "2026-04-13T00:00:00Z"
+}
 ```
+
+> `entraId` には 4-1 で取得した Object ID を設定してください。
 
 `role` フィールドに設定できる値:
 
@@ -234,22 +234,21 @@ echo "ハッシュ値（Cosmos DB に登録する値）: ${KEY_HASH}"
 
 #### 4-4. API キードキュメントの登録
 
-**`ApiKeys` コンテナ**（パーティションキー: `/memberId`）にドキュメントを挿入します。
+同じく **Azure Portal のデータエクスプローラー** を使用します。
 
-```bash
-az cosmosdb sql document create \
-  --account-name "${COSMOS_ACCOUNT}" \
-  --resource-group "${RESOURCE_GROUP}" \
-  --database-name "ClineApiDb" \
-  --container-name "ApiKeys" \
-  --body "{
-    \"id\": \"$(uuidgen | tr '[:upper:]' '[:lower:]')\",
-    \"memberId\": \"member-001\",
-    \"keyHash\": \"${KEY_HASH}\",
-    \"prefix\": \"sk-alice-\",
-    \"isActive\": true,
-    \"createdAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
-  }"
+1. `ClineApiDb` → `ApiKeys` → **Items** を選択
+2. **New Item** をクリック
+3. 以下の JSON を貼り付けて **Save** をクリック
+
+```json
+{
+  "id": "<uuidgen などで生成した UUID>",
+  "memberId": "member-001",
+  "keyHash": "<4-3 で計算した KEY_HASH の値>",
+  "prefix": "sk-alice-",
+  "isActive": true,
+  "createdAt": "<現在日時を ISO 8601 形式で。例: 2026-04-16T00:00:00Z>"
+}
 ```
 
 > `memberId` の値は、ステップ 4-1 で登録したメンバーの `id` と一致させてください。
