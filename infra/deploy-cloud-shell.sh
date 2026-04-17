@@ -109,8 +109,8 @@ echo ""
 # ─── 完了確認 ──────────────────────────────────────────────────
 info "イメージが ACR にプッシュされたことを確認中..."
 IMAGE_INFO=$(az acr repository show \
-  --registry "${ACR_NAME}" \
-  --image cline-api:latest \
+  --name "${ACR_NAME}" \
+  --repository cline-api \
   --query "{repository: name, tags: tags}" \
   --output json)
 
