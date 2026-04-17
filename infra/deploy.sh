@@ -133,6 +133,8 @@ while true; do
   read -r -p "リソースグループ番号を入力してください (1-${#RG_LIST[@]}): " RG_IDX
   if [[ "${RG_IDX}" =~ ^[0-9]+$ ]] && (( RG_IDX >= 1 && RG_IDX <= ${#RG_LIST[@]} )); then
     IFS=$'\t' read -r RESOURCE_GROUP LOCATION <<< "${RG_LIST[$((RG_IDX-1))]}"
+    # 末尾のキャリッジリターンを削除
+    LOCATION="${LOCATION%$'\r'}"
     success "リソースグループ: ${RESOURCE_GROUP} (${LOCATION})"
     break
   else

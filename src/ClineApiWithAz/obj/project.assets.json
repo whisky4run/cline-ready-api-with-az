@@ -1779,24 +1779,32 @@
     ]
   },
   "packageFolders": {
-    "/Users/stohru/.nuget/packages/": {}
+    "C:\\Users\\ACM093414\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/ClineApiWithAz.csproj",
+      "projectUniqueName": "C:\\DEV\\GitHub\\cline-ready-api-with-az-one-api\\src\\ClineApiWithAz\\ClineApiWithAz.csproj",
       "projectName": "ClineApiWithAz",
-      "projectPath": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/ClineApiWithAz.csproj",
-      "packagesPath": "/Users/stohru/.nuget/packages/",
-      "outputPath": "/Users/stohru/DEV/GitHub/cline-ready-api-with-az/src/ClineApiWithAz/obj/",
+      "projectPath": "C:\\DEV\\GitHub\\cline-ready-api-with-az-one-api\\src\\ClineApiWithAz\\ClineApiWithAz.csproj",
+      "packagesPath": "C:\\Users\\ACM093414\\.nuget\\packages\\",
+      "outputPath": "C:\\DEV\\GitHub\\cline-ready-api-with-az-one-api\\src\\ClineApiWithAz\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "/Users/stohru/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\ACM093414\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -1814,7 +1822,8 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      }
+      },
+      "SdkAnalysisLevel": "9.0.300"
     },
     "frameworks": {
       "net8.0": {
@@ -1848,7 +1857,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.200/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.313/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

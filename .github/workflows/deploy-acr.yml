@@ -1,0 +1,49 @@
+name: Build & Push to ACR
+
+on:
+  workflow_dispatch:
+    inputs:
+      acr_name:
+        description: 'ACR Name (e.g., acrclineapiuiankni2)'
+        required: true
+      image_tag:
+        description: 'Image tag (default: latest)'
+        required: false
+        default: 'latest'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push image to ACR using az acr build
+        run: |
+          ACR_NAME="${{ github.event.inputs.acr_name }}"
+          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+          
+          echo "[INFO] Building and pushing image to ACR: ${ACR_NAME}"
+          
+          az acr build \
+            --registry "${ACR_NAME}" \
+            --image "cline-api:${IMAGE_TAG}" \
+            --file "src/ClineApiWithAz/Dockerfile" \
+            .
+          
+          echo "[OK] Image pushed successfully"
+
+      - name: Logout from Azure
+        run: az logout
