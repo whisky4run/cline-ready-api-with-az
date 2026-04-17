@@ -106,20 +106,9 @@ fi
 success "イメージビルド & ACR プッシュ完了"
 echo ""
 
-# ─── 完了確認 ──────────────────────────────────────────────────
-info "イメージが ACR にプッシュされたことを確認中..."
-if IMAGE_INFO=$(az acr repository show \
-  --name "${ACR_NAME}" \
-  --repository cline-api \
-  --query "{repository: name, tags: tags}" \
-  --output json 2>/dev/null); then
-  success "イメージ確認完了："
-  echo "${IMAGE_INFO}" | jq '.'
-else
-  warn "イメージ確認失敗（Cloud Shell 認証トークンタイムアウト）"
-  warn "ただし、az acr build は成功しているため、イメージは ACR にプッシュされています"
-  success "フェーズ2 は正常に完了しました"
-fi
+# ⚠️ 注記: az acr repository show はCloud Shell でハングすることがあるため、確認ステップをスキップ
+# az acr build が成功したため、イメージは既に ACR にプッシュされています
+success "フェーズ2 は正常に完了しました"
 echo ""
 
 # ═══════════════════════════════════════════════════════════════
